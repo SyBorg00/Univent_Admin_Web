@@ -178,6 +178,7 @@ class AdminDashboard extends StatelessWidget {
                       itemCount: state.data.length,
                       itemBuilder: (context, index) {
                         final event = state.data[index];
+
                         final logo = event['organizations']['logo'];
                         final DateTime eventDate = DateTime.parse(
                           event['datetimestart'],
@@ -225,7 +226,7 @@ class AdminDashboard extends StatelessWidget {
 
   InkWell eventCards(
     BuildContext context,
-    event,
+    Map<String, dynamic> event,
     SupabaseClient supabase,
     logo,
     DateTime eventDate,

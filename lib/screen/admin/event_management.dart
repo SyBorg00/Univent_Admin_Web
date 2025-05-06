@@ -24,6 +24,7 @@ class CreateEvent extends StatelessWidget {
         BlocProvider(create: (_) => TagInputCubit()),
         BlocProvider(create: (_) => DateTimeRangeCubit()),
         BlocProvider(create: (_) => ImagePickerCubit()),
+        BlocProvider(create: (_) => ToggleVisibilityCubit(true)),
       ],
       child: BlocListener<ProjectBloc, ProjectState>(
         listener: (context, state) {
@@ -64,10 +65,66 @@ class CreateEvent extends StatelessWidget {
 
 //Upadating the events
 class UpdateEvent extends StatelessWidget {
-  const UpdateEvent({super.key});
+  final Map<String, dynamic> events;
+  const UpdateEvent({super.key, required this.events});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold();
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create:
+              (_) =>
+                  ProjectBloc()..add(
+                    LoadProject(tableName: 'organizations', query: 'name, uid'),
+                  ),
+        ),
+        BlocProvider(create: (_) => DropDownCubit()),
+        BlocProvider(create: (_) => TagInputCubit(initialTags: events['tags'])),
+        BlocProvider(create: (_) => DateTimeRangeCubit()),
+        BlocProvider(create: (_) => ImagePickerCubit()),
+        BlocProvider(create: (_) => ToggleVisibilityCubit(events['isVisible'])),
+      ],
+      child: BlocListener<ProjectBloc, ProjectState>(
+        listener: (context, state) {
+          if (state is ProjectSuccess) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => AdminDashboard()),
+            );
+          } else if (state is ProjectError) {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(state.message)));
+          }
+        },
+        child: Scaffold(
+          drawer: Drawer(),
+          appBar: AppBar(
+            backgroundColor: Color.fromARGB(255, 22, 17, 177),
+            title: Text("Event Management"),
+          ),
+          body: BlocBuilder<ProjectBloc, ProjectState>(
+            builder: (context, state) {
+              if (state is ProjectLoading) {
+                return Center();
+              } else if (state is ProjectLoaded) {
+                return EventForms(
+                  orgList: state.data,
+                  title: events['title'],
+                  location: events['location'],
+                  status: events['status'],
+                  type: events['type'],
+                  description: events['description'],
+                );
+              } else if (state is ProjectError) {
+                return Center();
+              }
+              return SizedBox();
+            },
+          ),
+        ),
+      ),
+    );
   }
 }

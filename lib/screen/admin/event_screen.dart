@@ -1,3 +1,4 @@
+import 'package:agawin_unievent_app/screen/admin/event_management.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -25,7 +26,7 @@ class EventScreen extends StatelessWidget {
               shader(size),
               contents(size, supabase),
               close(context),
-              updateButton(),
+              updateButton(context),
               removeButton(),
             ],
           ),
@@ -63,12 +64,19 @@ class EventScreen extends StatelessWidget {
     );
   }
 
-  Positioned updateButton() {
+  Positioned updateButton(BuildContext context) {
     return Positioned(
       bottom: 50,
       right: 475,
       child: ElevatedButton(
-        onPressed: () {},
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => UpdateEvent(events: events),
+            ),
+          );
+        },
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.transparent,
           foregroundColor: Colors.white,

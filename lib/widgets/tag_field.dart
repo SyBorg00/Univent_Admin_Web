@@ -12,7 +12,7 @@ class TagField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<TagInputCubit, List<String>>(
+    return BlocBuilder<TagInputCubit, List<dynamic>>(
       builder: (context, tags) {
         return Wrap(
           spacing: 6.0,

@@ -34,8 +34,8 @@ class DropDownCubit extends Cubit<dynamic> {
 //-----------------------------------------------------------------
 
 //for the custom tag input field-----------------------------------
-class TagInputCubit extends Cubit<List<String>> {
-  TagInputCubit({List<String>? initialTags}) : super(initialTags ?? []);
+class TagInputCubit extends Cubit<List<dynamic>> {
+  TagInputCubit({List<dynamic>? initialTags}) : super(initialTags ?? []);
 
   void addTag(String tag) {
     final trimmed = tag.trim();
@@ -97,5 +97,12 @@ class ImagePickerCubit extends Cubit<PlatformFile?> {
   }
 
   void clearImage() => emit(null);
+}
+//-----------------------------------------------------------------
+
+//hiding the state of visibility-----------------------------------
+class ToggleVisibilityCubit extends Cubit<bool> {
+  ToggleVisibilityCubit(super.currentToggle);
+  void toggle() => emit(!state);
 }
 //-----------------------------------------------------------------
