@@ -1,3 +1,3 @@
 # agawin_unievent_app
 
-A new Flutter project.
+Admin Website for 3rd year 2nd semester cs electives-1 
