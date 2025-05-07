@@ -1,34 +1,43 @@
 import 'package:agawin_unievent_app/bloc/main_bloc/crud_bloc.dart';
-import 'package:agawin_unievent_app/cubit/project_cubit.dart';
+import 'package:agawin_unievent_app/cubit/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class OrganizationForms extends StatelessWidget {
+  final String? uid;
   final String? name;
   final String? nickName;
   final String? category;
   final String? email;
   final String? facebook;
+  final ImagePickerCubit bannerCubit;
+  final ImagePickerCubit logoCubit;
+  final bool? isUpdateData;
 
   const OrganizationForms({
     super.key,
+    this.uid,
     this.name,
     this.nickName,
     this.category,
     this.email,
     this.facebook,
+    required this.bannerCubit,
+    required this.logoCubit,
+    this.isUpdateData,
   });
 
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    final nameController = TextEditingController();
-    final nickNameController = TextEditingController();
-    final categoryController = TextEditingController();
-    final emailController = TextEditingController();
-    final facebookController = TextEditingController();
-
+    final nameController = TextEditingController(text: name);
+    final nickNameController = TextEditingController(text: nickName);
+    final categoryController = TextEditingController(text: category);
+    final emailController = TextEditingController(text: email);
+    final facebookController = TextEditingController(text: facebook);
+    final SupabaseClient supabase = Supabase.instance.client;
     return Container(
       padding: EdgeInsets.only(left: 50, right: 50),
       width: size.width,
@@ -39,10 +48,7 @@ class OrganizationForms extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             //banner
-            BlocProvider(
-              create: (_) => ImagePickerCubit(),
-              child: bannerPicker(size),
-            ),
+            bannerPicker(size, bannerCubit),
             //names, nickname and category
             Row(
               children: [
@@ -72,10 +78,7 @@ class OrganizationForms extends StatelessWidget {
                   ),
                 ),
                 //logo section
-                BlocProvider(
-                  create: (context) => ImagePickerCubit(),
-                  child: logoPicker(),
-                ),
+                logoPicker(logoCubit),
               ],
             ),
             //email and facebook
@@ -112,6 +115,7 @@ class OrganizationForms extends StatelessWidget {
                     categoryController,
                     emailController,
                     facebookController,
+                    supabase,
                   ),
                 ),
                 Expanded(
@@ -128,8 +132,11 @@ class OrganizationForms extends StatelessWidget {
     );
   }
 
-  BlocBuilder<ImagePickerCubit, PlatformFile?> logoPicker() {
+  BlocBuilder<ImagePickerCubit, PlatformFile?> logoPicker(
+    ImagePickerCubit logoCubit,
+  ) {
     return BlocBuilder<ImagePickerCubit, PlatformFile?>(
+      bloc: logoCubit,
       builder: (context, file) {
         return Container(
           width: 500,
@@ -141,7 +148,7 @@ class OrganizationForms extends StatelessWidget {
               Align(
                 alignment: Alignment.center,
                 child: GestureDetector(
-                  onTap: () => context.read<ImagePickerCubit>().pickImage(),
+                  onTap: () => logoCubit.pickImage(),
                   child:
                       file != null
                           ? Image.memory(file.bytes!, fit: BoxFit.cover)
@@ -155,8 +162,12 @@ class OrganizationForms extends StatelessWidget {
     );
   }
 
-  BlocBuilder<ImagePickerCubit, PlatformFile?> bannerPicker(Size size) {
+  BlocBuilder<ImagePickerCubit, PlatformFile?> bannerPicker(
+    Size size,
+    ImagePickerCubit bannerCubit,
+  ) {
     return BlocBuilder<ImagePickerCubit, PlatformFile?>(
+      bloc: bannerCubit,
       builder: (context, file) {
         return Container(
           width: size.width,
@@ -168,7 +179,7 @@ class OrganizationForms extends StatelessWidget {
               Align(
                 alignment: Alignment.center,
                 child: GestureDetector(
-                  onTap: () => context.read<ImagePickerCubit>().pickImage(),
+                  onTap: () => bannerCubit.pickImage(),
                   child:
                       file != null
                           ? Image.memory(file.bytes!, fit: BoxFit.cover)
@@ -189,25 +200,62 @@ class OrganizationForms extends StatelessWidget {
     TextEditingController categoryController,
     TextEditingController emailController,
     TextEditingController facebookController,
+    SupabaseClient supabase,
   ) {
     return ElevatedButton(
       onPressed: () {
-        final imageFileName = context.read<ImagePickerCubit>().state?.name;
-        context.read<ProjectBloc>().add(
-          CreateData(
-            tableName: 'organizations',
-            data: {
-              "name": nameController.text,
-              "banner": "event_images/$imageFileName",
-              "logo": "",
-              "acronynm": acronymController.text,
-              "category": categoryController.text,
-              "email": emailController.text,
-              "facebook": facebookController.text,
-              "status": "active",
-            },
-          ),
-        );
+        final logoFile = logoCubit.state;
+        final bannerFile = bannerCubit.state;
+        final toggledMode = isUpdateData ?? false;
+
+        if (toggledMode) {
+          supabase.storage
+              .from('images')
+              .uploadBinary('logo/${logoFile?.name}', logoFile!.bytes!);
+          supabase.storage
+              .from('images')
+              .uploadBinary('banner/${bannerFile?.name}', bannerFile!.bytes!);
+          context.read<ProjectBloc>().add(
+            UpdateData(
+              tableName: 'organizations',
+              primarykey: 'uid',
+              uid: uid ?? "",
+              updatedData: {
+                "name": nameController.text,
+                "banner": "banner/${bannerFile.name}",
+                "logo": "logo/${logoFile.name}",
+                "acronym": acronymController.text,
+                "category": categoryController.text,
+                "email": emailController.text,
+                "facebook": facebookController.text,
+                "status": "active",
+              },
+            ),
+          );
+        } else {
+          supabase.storage
+              .from('images')
+              .uploadBinary('logo/${logoFile?.name}', logoFile!.bytes!);
+          supabase.storage
+              .from('images')
+              .uploadBinary('banner/${bannerFile?.name}', bannerFile!.bytes!);
+
+          context.read<ProjectBloc>().add(
+            CreateData(
+              tableName: 'organizations',
+              data: {
+                "name": nameController.text,
+                "banner": "banner/${bannerFile.name}",
+                "logo": "logo/${logoFile.name}",
+                "acronym": acronymController.text,
+                "category": categoryController.text,
+                "email": emailController.text,
+                "facebook": facebookController.text,
+                "status": "active",
+              },
+            ),
+          );
+        }
       },
       child: Text("Submit"),
     );

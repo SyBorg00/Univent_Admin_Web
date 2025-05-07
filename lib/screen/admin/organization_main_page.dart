@@ -3,6 +3,7 @@ import 'package:agawin_unievent_app/cubit/project_cubit.dart';
 import 'package:agawin_unievent_app/screen/admin/admin_dashboard.dart';
 import 'package:agawin_unievent_app/screen/admin/event_management.dart';
 import 'package:agawin_unievent_app/screen/admin/event_screen.dart';
+import 'package:agawin_unievent_app/screen/admin/organization_management.dart';
 import 'package:agawin_unievent_app/screen/admin/organization_screen.dart';
 import 'package:agawin_unievent_app/widgets/event_card.dart';
 import 'package:agawin_unievent_app/widgets/univent_sidebar.dart';
@@ -130,6 +131,27 @@ class OrganizationMainPage extends StatelessWidget {
                         );
                       },
                       child: Icon(Icons.add, color: Colors.white, size: 60),
+                    ),
+                  ),
+                  Positioned(
+                    right: 160,
+                    bottom: 40,
+                    child: FloatingActionButton.large(
+                      elevation: 60,
+                      tooltip: "Edit this Organization",
+                      shape: CircleBorder(),
+                      backgroundColor: Color.fromARGB(255, 4, 3, 84),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder:
+                                (context) =>
+                                    UpdateOrganization(orgInfo: state.data),
+                          ),
+                        );
+                      },
+                      child: Icon(Icons.edit, color: Colors.white, size: 60),
                     ),
                   ),
                 ],

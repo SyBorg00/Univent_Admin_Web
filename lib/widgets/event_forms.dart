@@ -1,4 +1,5 @@
 import 'package:agawin_unievent_app/bloc/main_bloc/crud_bloc.dart';
+import 'package:agawin_unievent_app/cubit/image_picker.dart';
 import 'package:agawin_unievent_app/cubit/project_cubit.dart';
 import 'package:agawin_unievent_app/widgets/event_datetime_picker.dart';
 import 'package:agawin_unievent_app/widgets/tag_field.dart';
@@ -9,6 +10,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 class EventForms extends StatelessWidget {
   final List<dynamic> orgList;
+  final String? uid;
   final String? title;
   final String? description;
   final String? location;
@@ -19,6 +21,7 @@ class EventForms extends StatelessWidget {
   const EventForms({
     super.key,
     required this.orgList,
+    this.uid,
     this.title,
     this.description,
     this.location,
@@ -149,9 +152,9 @@ class EventForms extends StatelessWidget {
       startDateController: TextEditingController(),
       endDateController: TextEditingController(),
       onStartChanged:
-          (date) => context.read<DateTimeRangeCubit>().setStartDate(date),
+          (date) => context.read<DateTimeRangeCubit>().updateStart(date),
       onEndChanged:
-          (date) => context.read<DateTimeRangeCubit>().setEndDate(date),
+          (date) => context.read<DateTimeRangeCubit>().updateEnd(date),
     );
   }
 
@@ -277,30 +280,51 @@ class EventForms extends StatelessWidget {
         final dateTimeRange = context.read<DateTimeRangeCubit>().state;
         final imageFile = context.read<ImagePickerCubit>().state;
         final tags = context.read<TagInputCubit>().state;
-        final toggleVisibility = context.read<ToggleVisibilityCubit>().state;
+        final toggledVisibility = context.read<ToggleVisibilityCubit>().state;
         final updateToggle =
             isUpdateData ??
-            false; //check toggle if the user will either create or update data
+            false; //check toggle if the user will either insert or update data
 
+        //initial checking
         if (formKey.currentState!.validate() &&
             selectedOrganization != null &&
-            dateTimeRange.start != null &&
-            dateTimeRange.end != null &&
+            dateTimeRange?.start != null &&
+            dateTimeRange?.end != null &&
             imageFile != null &&
             (titleController.text.isNotEmpty ||
                 titleController.text.trim().isNotEmpty) &&
             (locationController.text.isNotEmpty ||
                 locationController.text.trim().isNotEmpty)) {
+          //check if it is about updating the data or not
           if (updateToggle) {
-            supabase.storage.from('images').remove(['']);
+            //supabase.storage.from('images').remove([]);
+            supabase.storage
+                .from('images')
+                .uploadBinary(
+                  'event_images/${imageFile.name}',
+                  imageFile.bytes!,
+                );
             context.read<ProjectBloc>().add(
               UpdateData(
                 tableName: "events",
-                primarykey: 'need to put it first here',
-                uid: 'uid',
-                updatedData: {},
+                primarykey: "uid",
+                uid: uid!,
+                updatedData: {
+                  "orguid": selectedOrganization['uid'],
+                  "title": titleController.text,
+                  "banner": "event_images/${imageFile.name}",
+                  "tags": tags,
+                  "type": typeController.text,
+                  "location": locationController.text,
+                  "description": descController.text,
+                  "datetimestart": dateTimeRange?.start!.toIso8601String(),
+                  "datetimeend": dateTimeRange?.end!.toIso8601String(),
+                  "status": "pending",
+                  "isVisible": toggledVisibility,
+                },
               ),
             );
+            //else will insert data to the database instead
           } else {
             supabase.storage
                 .from('images')
@@ -320,10 +344,10 @@ class EventForms extends StatelessWidget {
                   "type": typeController.text,
                   "location": locationController.text,
                   "description": descController.text,
-                  "datetimestart": dateTimeRange.start!.toIso8601String(),
-                  "datetimeend": dateTimeRange.end!.toIso8601String(),
+                  "datetimestart": dateTimeRange?.start!.toIso8601String(),
+                  "datetimeend": dateTimeRange?.end!.toIso8601String(),
                   "status": "pending",
-                  "isVisible": toggleVisibility,
+                  "isVisible": toggledVisibility,
                 },
               ),
             );

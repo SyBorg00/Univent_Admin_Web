@@ -1,4 +1,3 @@
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 //**For handling states of certain input fields**
@@ -28,7 +27,8 @@ class NavigationState {
 
 //for custom dropdown button----------------------------------------
 class DropDownCubit extends Cubit<dynamic> {
-  DropDownCubit() : super(null);
+  DropDownCubit(dynamic initValue)
+    : super(initValue ?? "Please select the organization here");
   void selectItem(dynamic value) => emit(value);
 }
 //-----------------------------------------------------------------
@@ -51,52 +51,35 @@ class TagInputCubit extends Cubit<List<dynamic>> {
 //-----------------------------------------------------------------
 
 //for datetime inputs----------------------------------------------
-class DateRangeState {
+class EventDateTimeRange {
   final DateTime? start;
   final DateTime? end;
-  DateRangeState({this.start, this.end});
-
-  DateRangeState copyWith({DateTime? start, DateTime? end}) {
-    return DateRangeState(start: start ?? this.start, end: end ?? this.end);
-  }
+  EventDateTimeRange({this.start, this.end});
 }
 
-class DateTimeRangeCubit extends Cubit<DateRangeState> {
-  DateTimeRangeCubit() : super(DateRangeState());
+class DateTimeRangeCubit extends Cubit<EventDateTimeRange?> {
+  DateTimeRangeCubit({EventDateTimeRange? initDateTime}) : super(initDateTime);
 
-  void setStartDate(DateTime date) {
-    final currentEnd = state.end;
-
-    //clears end date if it is before your declared start date
-    DateTime? newEnd =
-        (currentEnd != null && date.isAfter(currentEnd)) ? null : currentEnd;
-    emit(state.copyWith(start: date, end: newEnd));
-  }
-
-  void setEndDate(DateTime date) {
-    final currentStart = state.start;
-    if (currentStart != null && date.isBefore(currentStart)) return;
-    emit(state.copyWith(end: date));
-  }
-}
-//-----------------------------------------------------------------
-
-//for image uploading----------------------------------------------
-class ImagePickerCubit extends Cubit<PlatformFile?> {
-  ImagePickerCubit() : super(null);
-  Future<void> pickImage() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['jpg', 'png', 'jpeg', 'gif', 'webp'],
-      withData: true,
-      allowMultiple: false,
-    );
-    if (result != null && result.files.single.bytes != null) {
-      emit(result.files.single);
+  void setDate(EventDateTimeRange date) {
+    if (date.start!.isAfter(date.end!)) {
+      clear();
+      return;
     }
+    emit(date);
   }
 
-  void clearImage() => emit(null);
+  void clear() => emit(null);
+  void updateStart(DateTime newStart) {
+    final current = state;
+    if (current != null && newStart.isAfter(current.end!)) return;
+    emit(EventDateTimeRange(start: newStart, end: current?.end));
+  }
+
+  void updateEnd(DateTime newEnd) {
+    final current = state;
+    if (current != null && newEnd.isBefore(current.start!)) return;
+    emit(EventDateTimeRange(start: current?.start, end: newEnd));
+  }
 }
 //-----------------------------------------------------------------
 
