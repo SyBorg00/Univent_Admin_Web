@@ -1,4 +1,3 @@
-import 'package:agawin_unievent_app/bloc/auth_bloc/auth_bloc.dart';
 import 'package:agawin_unievent_app/bloc/main_bloc/crud_bloc.dart';
 import 'package:agawin_unievent_app/cubit/project_cubit.dart';
 import 'package:agawin_unievent_app/screen/admin/event_management.dart';
@@ -133,6 +132,7 @@ class AdminDashboard extends StatelessWidget {
             ],
           ),
         ),
+
         BlocBuilder<ProjectBloc, ProjectState>(
           builder: (context, state) {
             if (state is ProjectLoading) {
@@ -159,18 +159,7 @@ class AdminDashboard extends StatelessWidget {
                       itemCount: state.data.length,
                       itemBuilder: (context, index) {
                         final event = state.data[index];
-
-                        final logo = event['organizations']['logo'];
-                        final DateTime eventDate = DateTime.parse(
-                          event['datetimestart'],
-                        );
-                        return eventCards(
-                          context,
-                          event,
-                          supabase,
-                          logo,
-                          eventDate,
-                        );
+                        return eventCards(context, event, supabase);
                       },
                     ),
                   ),
@@ -186,7 +175,9 @@ class AdminDashboard extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => CreateEvent(),
+                            builder:
+                                (context) =>
+                                    EventManagement(isUpdateData: false),
                           ),
                         );
                       },
@@ -222,9 +213,9 @@ class AdminDashboard extends StatelessWidget {
     BuildContext context,
     Map<String, dynamic> event,
     SupabaseClient supabase,
-    logo,
-    DateTime eventDate,
   ) {
+    final DateTime eventDate = DateTime.parse(event['datetimestart']);
+    final tags = event['tags'] as List<dynamic>;
     return InkWell(
       onTap: () {
         showGeneralDialog(
@@ -256,7 +247,9 @@ class AdminDashboard extends StatelessWidget {
         avatar: CircleAvatar(
           radius: 25,
           backgroundImage: NetworkImage(
-            supabase.storage.from('images').getPublicUrl(logo),
+            supabase.storage
+                .from('images')
+                .getPublicUrl(event['organizations']['logo']),
           ),
         ),
         banner: Image.network(
@@ -266,7 +259,7 @@ class AdminDashboard extends StatelessWidget {
         ),
         eventDate: eventDate,
         title: event['title'],
-        tags: "WIP", //event['tags'],
+        tags: tags,
       ),
     );
   }

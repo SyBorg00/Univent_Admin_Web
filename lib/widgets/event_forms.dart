@@ -34,12 +34,12 @@ class EventForms extends StatelessWidget {
   Widget build(BuildContext context) {
     final SupabaseClient supabase = Supabase.instance.client;
     final size = MediaQuery.of(context).size;
+    final formKey = GlobalKey<FormState>();
     final titleController = TextEditingController(text: title);
     final locationController = TextEditingController(text: location);
     final typeController = TextEditingController(text: type);
     final descContoller = TextEditingController(text: description);
     //final statusController = TextEditingController(text: status);
-    final formKey = GlobalKey<FormState>();
 
     return Form(
       key: formKey,
@@ -64,7 +64,7 @@ class EventForms extends StatelessWidget {
                         //organization dropdownbutton
                         dropDownSelection(),
                         //title field
-                        inputField(
+                        requiredField(
                           "Title of Event here",
                           2,
                           Icon(Icons.title),
@@ -79,16 +79,17 @@ class EventForms extends StatelessWidget {
                   imagePicker(),
                 ],
               ),
-              //the rest
+
               Text(
                 "Input the Details of the Event:",
                 textAlign: TextAlign.left,
               ),
+              //location and type field
               Row(
                 children: [
                   Flexible(
                     flex: 3,
-                    child: inputField(
+                    child: requiredField(
                       "Location",
                       1,
                       Icon(Icons.pin_drop),
@@ -98,7 +99,7 @@ class EventForms extends StatelessWidget {
                   SizedBox(width: 30),
                   Flexible(
                     flex: 1,
-                    child: inputField(
+                    child: requiredField(
                       "Type",
                       1,
                       Icon(Icons.book),
@@ -109,22 +110,25 @@ class EventForms extends StatelessWidget {
               ),
               //date start and date end picker
               dateTimePicker(context),
+
+              //description field
               SizedBox(
                 width: size.width,
                 height: 300,
-                child: inputField(
+                child: optionalField(
                   "Description",
                   6,
                   Icon(Icons.edit),
                   descContoller,
                 ),
               ),
+              //submit and cancel buttons
               Row(
                 children: [
                   Expanded(
                     child: submitButton(
-                      formKey,
                       supabase,
+                      formKey,
                       context,
                       titleController,
                       locationController,
@@ -134,7 +138,9 @@ class EventForms extends StatelessWidget {
                   ),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
                       child: Text("Cancel"),
                     ),
                   ),
@@ -242,7 +248,7 @@ class EventForms extends StatelessWidget {
     );
   }
 
-  TextFormField inputField(
+  TextFormField requiredField(
     String label,
     int lineNum,
     Icon icon,
@@ -265,9 +271,26 @@ class EventForms extends StatelessWidget {
     );
   }
 
+  TextField optionalField(
+    String label,
+    int lineNum,
+    Icon icon,
+    TextEditingController controller,
+  ) {
+    return TextField(
+      controller: controller,
+      maxLines: lineNum,
+      decoration: InputDecoration(
+        prefixIcon: icon,
+        labelText: label,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(20)),
+      ),
+    );
+  }
+
   ElevatedButton submitButton(
-    GlobalKey<FormState> formKey,
     SupabaseClient supabase,
+    GlobalKey<FormState> formKey,
     BuildContext context,
     TextEditingController titleController,
     TextEditingController locationController,
@@ -283,7 +306,7 @@ class EventForms extends StatelessWidget {
         final toggledVisibility = context.read<ToggleVisibilityCubit>().state;
         final updateToggle =
             isUpdateData ??
-            false; //check toggle if the user will either insert or update data
+            false; //check toggle if the user is either isnerting or updating data
 
         //initial checking
         if (formKey.currentState!.validate() &&
@@ -332,7 +355,6 @@ class EventForms extends StatelessWidget {
                   'event_images/${imageFile.name}',
                   imageFile.bytes!,
                 );
-
             context.read<ProjectBloc>().add(
               CreateData(
                 tableName: 'events',
@@ -352,6 +374,17 @@ class EventForms extends StatelessWidget {
               ),
             );
           }
+          //specific for the banner selection
+        } else if (imageFile == null) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text("Please select the Banner")));
+
+          //specific for the organization selection
+        } else if (selectedOrganization == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Please select the organization")),
+          );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text("Complete all required fields")),

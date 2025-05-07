@@ -104,6 +104,7 @@ class OrganizationMainPage extends StatelessWidget {
                         final DateTime eventDate = DateTime.parse(
                           event['datetimestart'],
                         );
+
                         return eventCards(
                           context,
                           event,
@@ -126,7 +127,9 @@ class OrganizationMainPage extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => CreateEvent(),
+                            builder:
+                                (context) =>
+                                    EventManagement(isUpdateData: false),
                           ),
                         );
                       },
@@ -212,6 +215,7 @@ class OrganizationMainPage extends StatelessWidget {
     logo,
     DateTime eventDate,
   ) {
+    final tags = event['tags'] as List<dynamic>;
     return InkWell(
       onTap: () {
         showGeneralDialog(
@@ -253,7 +257,7 @@ class OrganizationMainPage extends StatelessWidget {
         ),
         eventDate: eventDate,
         title: event['title'],
-        tags: "WIP", //event['tags'],
+        tags: tags, //event['tags'],
       ),
     );
   }

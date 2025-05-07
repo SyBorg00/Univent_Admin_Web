@@ -73,7 +73,9 @@ class EventScreen extends StatelessWidget {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => UpdateEvent(events: events),
+              builder:
+                  (context) =>
+                      EventManagement(currentEvent: events, isUpdateData: true),
             ),
           );
         },

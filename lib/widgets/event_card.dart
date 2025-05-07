@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 
 class EventCard extends StatelessWidget {
   final String? title; //title of the event card
-  final String? tags; //hashtags baby
+  final List<dynamic>? tags; //hashtags baby
   final CircleAvatar? avatar;
   final Widget? banner;
 
@@ -68,7 +68,11 @@ class EventCard extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        Text(tags ?? "#Tags"),
+                        Wrap(
+                          children: [
+                            ...tags!.map((tag) => Chip(label: Text(tag))),
+                          ],
+                        ),
                       ],
                     ),
                   ),
