@@ -26,7 +26,7 @@ class OrganizationMainPage extends StatelessWidget {
           create:
               (_) =>
                   ProjectBloc()..add(
-                    LoadProjectWithParams(
+                    LoadProject(
                       tableName: 'organizations',
                       query: "*,events(*)",
                       foreignKeyColumn: "uid",
@@ -71,7 +71,7 @@ class OrganizationMainPage extends StatelessWidget {
           builder: (context, state) {
             if (state is ProjectLoading) {
               return Center(child: CircularProgressIndicator());
-            } else if (state is ProjectLoadedWithParams) {
+            } else if (state is ProjectLoaded) {
               if (state.data.isEmpty) {
                 return const Center(
                   child: Text("No events can be found in this organization"),

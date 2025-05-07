@@ -1,11 +1,8 @@
-//this bloc is responsible for handling all events in the main page, like updating creating etc. i think...
-//I will also include the state and event in here to lessen the files needed... cuz i still need a bloc
-// to handle updates and deletion... cuz hoo boy that's going to cost me more files if i do it separately
-
-//EVENTS---------------------------------------------------
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+//this bloc is responsible for handling all events in the main page, like updating creating etc.
 
+//EVENTS---------------------------------------------------
 abstract class ProjectEvent {}
 
 class LoadProject extends ProjectEvent {
@@ -62,18 +59,14 @@ abstract class ProjectState {}
 class ProjectLoading extends ProjectState {}
 
 class ProjectLoaded extends ProjectState {
-  final List<dynamic> data;
+  final dynamic data;
   ProjectLoaded(this.data);
-}
-
-class ProjectLoadedWithParams extends ProjectState {
-  final Map<String, dynamic> data;
-  ProjectLoadedWithParams(this.data);
 }
 
 //for create, update, or delete states
 class ProjectSuccess extends ProjectState {}
 
+//handling errors
 class ProjectError extends ProjectState {
   final String message;
   ProjectError(this.message);
@@ -86,7 +79,6 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
   ProjectBloc() : super(ProjectLoading()) {
     on<LoadProject>(_onLoadProject);
     on<CreateData>(_onCreateData);
-    on<LoadProjectWithParams>(_onLoadWithParams);
     on<UpdateData>(_onUpdateData);
   }
 
@@ -96,30 +88,21 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
   ) async {
     emit(ProjectLoading());
     try {
-      final response = await supabase.from(event.tableName).select(event.query);
-      final List<Map<String, dynamic>> ev = List<Map<String, dynamic>>.from(
-        response,
-      );
-      emit(ProjectLoaded(ev));
-    } catch (e) {
-      emit(ProjectError("Failed to load data"));
-    }
-  }
-
-  Future<void> _onLoadWithParams(
-    LoadProjectWithParams event,
-    Emitter<ProjectState> emit,
-  ) async {
-    try {
-      final response =
-          await supabase
-              .from(event.tableName)
-              .select(event.query)
-              .eq(event.foreignKeyColumn!, event.foreignKeyValue!)
-              .single();
-
-      final Map<String, dynamic> ev = Map<String, dynamic>.from(response);
-      emit(ProjectLoadedWithParams(ev));
+      final query = supabase.from(event.tableName).select(event.query);
+      if (event.foreignKeyColumn != null && event.foreignKeyValue != null) {
+        final response =
+            await query
+                .eq(event.foreignKeyColumn!, event.foreignKeyValue!)
+                .single();
+        final Map<String, dynamic> ev = Map<String, dynamic>.from(response);
+        emit(ProjectLoaded(ev));
+      } else {
+        final response = await query;
+        final List<Map<String, dynamic>> ev = List<Map<String, dynamic>>.from(
+          response,
+        );
+        emit(ProjectLoaded(ev));
+      }
     } catch (e) {
       emit(ProjectError("Failed to load data"));
     }

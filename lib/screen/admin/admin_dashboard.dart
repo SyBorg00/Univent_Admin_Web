@@ -4,7 +4,6 @@ import 'package:agawin_unievent_app/cubit/project_cubit.dart';
 import 'package:agawin_unievent_app/screen/admin/event_management.dart';
 import 'package:agawin_unievent_app/screen/admin/event_screen.dart';
 import 'package:agawin_unievent_app/screen/admin/organization_screen.dart';
-import 'package:agawin_unievent_app/screen/login.dart';
 import 'package:agawin_unievent_app/widgets/univent_sidebar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -13,7 +12,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:agawin_unievent_app/widgets/event_card.dart';
 
 class AdminDashboard extends StatelessWidget {
-  const AdminDashboard({super.key});
+  final GlobalKey<ScaffoldState> scaffoldKey = GlobalKey<ScaffoldState>();
+  AdminDashboard({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -22,6 +22,7 @@ class AdminDashboard extends StatelessWidget {
 
     return MultiBlocProvider(
       providers: [
+        //load data from the supabase
         BlocProvider(
           create:
               (_) =>
@@ -32,44 +33,34 @@ class AdminDashboard extends StatelessWidget {
                     ),
                   ),
         ),
+        //handling the navigation siderail
         BlocProvider(create: (_) => NavigationCubit()),
       ],
-
       child: Scaffold(
-        endDrawer: Drawer(
-          child: ListView(
-            children: [
-              ListTile(title: Text('Profile')),
-              ListTile(title: Text('Preference')),
-              ListTile(
-                title: IconButton(
-                  onPressed: () async {
-                    await supabase.auth.signOut();
-                    if (context.mounted) {
-                      Navigator.pushAndRemoveUntil(
-                        context,
-                        MaterialPageRoute(
-                          builder:
-                              (context) => BlocProvider(
-                                create: (context) => AuthBloc(),
-                                child: Login(),
-                              ),
-                        ),
-                        (route) => false,
-                      );
-                    }
-                  },
-                  icon: Row(children: [Text('Log Out'), Icon(Icons.logout)]),
-                ),
-              ),
-            ],
-          ),
-        ),
+        key: scaffoldKey,
+        endDrawer: profileDrawer(),
         body: Row(
           children: [
             sidebar(context),
             Flexible(flex: 2, child: mainContentSide(size, supabase, context)),
           ],
+        ),
+      ),
+    );
+  }
+
+  ConstrainedBox profileDrawer() {
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxHeight: 300, maxWidth: 200),
+
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(bottomLeft: Radius.circular(10)),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [ListTile(title: Text("Log Out"))],
         ),
       ),
     );
@@ -116,16 +107,6 @@ class AdminDashboard extends StatelessWidget {
     );
   }
 
-  Row buttons(Icon icon, String title) {
-    return Row(
-      children: [
-        icon,
-        SizedBox(width: 10),
-        Text(title, style: TextStyle(color: Colors.white)),
-      ],
-    );
-  }
-
   Column mainContentSide(
     Size size,
     SupabaseClient supabase,
@@ -145,7 +126,7 @@ class AdminDashboard extends StatelessWidget {
               IconButton(onPressed: () {}, icon: Icon(Icons.notifications)),
               IconButton(
                 onPressed: () {
-                  Scaffold.of(context).openEndDrawer();
+                  scaffoldKey.currentState?.openEndDrawer();
                 },
                 icon: CircleAvatar(),
               ),
@@ -215,11 +196,24 @@ class AdminDashboard extends StatelessWidget {
                 ],
               );
             } else if (state is ProjectError) {
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text(state.message)));
               return Center(child: Text(state.message));
             }
             return SizedBox();
           },
         ),
+      ],
+    );
+  }
+
+  Row buttons(Icon icon, String title) {
+    return Row(
+      children: [
+        icon,
+        SizedBox(width: 10),
+        Text(title, style: TextStyle(color: Colors.white)),
       ],
     );
   }
