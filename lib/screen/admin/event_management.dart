@@ -1,12 +1,14 @@
 import 'package:agawin_unievent_app/bloc/main_bloc/crud_bloc.dart';
-import 'package:agawin_unievent_app/cubit/image_picker.dart';
+import 'package:agawin_unievent_app/cubit/event_datetimerange_cubit.dart';
+import 'package:agawin_unievent_app/cubit/image_download_cubit.dart';
+import 'package:agawin_unievent_app/cubit/image_picker_cubit.dart';
 import 'package:agawin_unievent_app/cubit/project_cubit.dart';
 import 'package:agawin_unievent_app/screen/admin/admin_dashboard.dart';
 import 'package:agawin_unievent_app/widgets/event_forms.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-//inserting new events
 class EventManagement extends StatelessWidget {
   final bool isUpdateData;
   final Map<String, dynamic>? currentEvent;
@@ -27,21 +29,23 @@ class EventManagement extends StatelessWidget {
                     LoadProject(tableName: 'organizations', query: 'name, uid'),
                   ),
         ),
-        BlocProvider(
-          create: (_) => DropDownCubit("Please select an organization first"),
-        ),
         BlocProvider(create: (_) => TagInputCubit()),
-        BlocProvider(create: (_) => DateTimeRangeCubit()),
-        BlocProvider(create: (_) => ImagePickerCubit()),
-        BlocProvider(create: (_) => ToggleVisibilityCubit(true)),
+        BlocProvider(create: (_) => ToggleButtonCubit(true)),
+        if (isUpdateData)
+          BlocProvider(
+            create:
+                (_) =>
+                    ImageDownloadCubit()
+                      ..downloadImage(currentEvent?['banner']),
+          ),
       ],
-      //bloclistener to handle state of form submission
+      //bloclistener to handle states upon form submission
       child: BlocListener<ProjectBloc, ProjectState>(
         listener: (context, state) {
           if (state is ProjectSuccess) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text("Your Process Is Successful!")),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text("Process Is Successful!")));
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(builder: (context) => AdminDashboard()),
@@ -52,11 +56,12 @@ class EventManagement extends StatelessWidget {
             ).showSnackBar(SnackBar(content: Text(state.message)));
           }
         },
+        //main body
         child: Scaffold(
           drawer: Drawer(),
           appBar: AppBar(
             backgroundColor: Color.fromARGB(255, 22, 17, 177),
-            title: Text("Event Manager"),
+            title: Text("Event Manager", style: TextStyle(color: Colors.white)),
           ),
           body: BlocBuilder<ProjectBloc, ProjectState>(
             builder: (context, state) {
@@ -70,18 +75,55 @@ class EventManagement extends StatelessWidget {
                   ),
                 );
               } else if (state is ProjectLoaded) {
-                return EventForms(
-                  orgList: state.data,
-                  uid: currentEvent?['uid'],
-                  title: currentEvent?['title'],
-                  location: currentEvent?['location'],
-                  status: currentEvent?['status'],
-                  type: currentEvent?['type'],
-                  description: currentEvent?['description'],
-                  isUpdateData: isUpdateData,
-                );
+                final orgList = state.data;
+                if (isUpdateData) {
+                  DateTime? start = DateTime.parse(
+                    currentEvent?['datetimestart'],
+                  );
+                  DateTime? end = DateTime.parse(currentEvent?['datetimeend']);
+                  final organization = orgList.firstWhere(
+                    (org) => org['uid'] == currentEvent?['orguid'],
+                  );
+                  //if the admin wants to update events, EventForms w/ paramaters will be called
+                  return BlocBuilder<ImageDownloadCubit, PlatformFile?>(
+                    builder: (context, file) {
+                      return EventForms(
+                        orgList: state.data,
+                        uid: currentEvent?['uid'],
+                        title: currentEvent?['title'],
+                        bannerPath: currentEvent?['banner'],
+                        location: currentEvent?['location'],
+                        status: currentEvent?['status'],
+                        type: currentEvent?['type'],
+                        description: currentEvent?['description'],
+                        isUpdateData: isUpdateData,
+                        dateTimeRangeCubit: DateTimeRangeCubit(
+                          initDateTime: EventDateTimeRange(
+                            start: start,
+                            end: end,
+                          ),
+                        ),
+                        bannerCubit: ImagePickerCubit(initImage: file),
+                        toggleButton: ToggleButtonCubit(
+                          currentEvent?['isVisible'],
+                        ),
+                        dropDownCubit: DropDownCubit(organization),
+                      );
+                    },
+                  );
+                } else {
+                  //else, will instead create a new event
+                  return EventForms(
+                    toggleButton: ToggleButtonCubit(true),
+                    bannerCubit: ImagePickerCubit(),
+                    dateTimeRangeCubit: DateTimeRangeCubit(),
+                    dropDownCubit: DropDownCubit(orgList.first),
+                    orgList: orgList,
+                    isUpdateData: false,
+                  );
+                }
               } else if (state is ProjectError) {
-                return Center();
+                return Center(child: Text(state.message));
               }
               return SizedBox();
             },

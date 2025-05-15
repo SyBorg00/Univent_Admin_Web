@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 //this bloc is responsible for handling all events in the main page, like updating creating etc.
@@ -11,19 +12,6 @@ class LoadProject extends ProjectEvent {
   final String? foreignKeyColumn;
   final String? foreignKeyValue;
   LoadProject({
-    required this.tableName,
-    required this.query,
-    this.foreignKeyColumn,
-    this.foreignKeyValue,
-  });
-}
-
-class LoadProjectWithParams extends ProjectEvent {
-  final String tableName;
-  final String query;
-  final String? foreignKeyColumn;
-  final String? foreignKeyValue;
-  LoadProjectWithParams({
     required this.tableName,
     required this.query,
     this.foreignKeyColumn,
@@ -66,6 +54,11 @@ class ProjectLoaded extends ProjectState {
 //for create, update, or delete states
 class ProjectSuccess extends ProjectState {}
 
+class ImageDownloaded extends ProjectState {
+  final PlatformFile? initialImage;
+  ImageDownloaded(this.initialImage);
+}
+
 //handling errors
 class ProjectError extends ProjectState {
   final String message;
@@ -95,6 +88,7 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
                 .eq(event.foreignKeyColumn!, event.foreignKeyValue!)
                 .single();
         final Map<String, dynamic> ev = Map<String, dynamic>.from(response);
+
         emit(ProjectLoaded(ev));
       } else {
         final response = await query;

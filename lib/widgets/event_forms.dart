@@ -1,11 +1,13 @@
 import 'package:agawin_unievent_app/bloc/main_bloc/crud_bloc.dart';
-import 'package:agawin_unievent_app/cubit/image_picker.dart';
+import 'package:agawin_unievent_app/cubit/event_datetimerange_cubit.dart';
+import 'package:agawin_unievent_app/cubit/image_picker_cubit.dart';
 import 'package:agawin_unievent_app/cubit/project_cubit.dart';
 import 'package:agawin_unievent_app/widgets/event_datetime_picker.dart';
 import 'package:agawin_unievent_app/widgets/tag_field.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class EventForms extends StatelessWidget {
@@ -13,10 +15,15 @@ class EventForms extends StatelessWidget {
   final String? uid;
   final String? title;
   final String? description;
+  final String? bannerPath;
   final String? location;
   final String? type;
   final String? status;
-  final bool? isUpdateData;
+  final bool isUpdateData;
+  final DropDownCubit? dropDownCubit;
+  final ImagePickerCubit? bannerCubit;
+  final DateTimeRangeCubit? dateTimeRangeCubit;
+  final ToggleButtonCubit toggleButton;
 
   const EventForms({
     super.key,
@@ -24,10 +31,15 @@ class EventForms extends StatelessWidget {
     this.uid,
     this.title,
     this.description,
+    this.bannerPath,
     this.location,
     this.type,
     this.status,
-    this.isUpdateData,
+    required this.isUpdateData,
+    required this.toggleButton,
+    this.dropDownCubit,
+    this.dateTimeRangeCubit,
+    this.bannerCubit,
   });
 
   @override
@@ -44,72 +56,56 @@ class EventForms extends StatelessWidget {
     return Form(
       key: formKey,
       child: Container(
-        padding: EdgeInsets.only(left: 50, right: 50),
+        padding: EdgeInsets.all(30),
         width: size.width,
         height: size.height,
         child: SingleChildScrollView(
-          //***main column
+          //***main body
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            mainAxisAlignment: MainAxisAlignment.start,
             children: [
-              //*titles and such
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        //toggle button
-                        toggleVisibilityButton(),
-                        //organization dropdownbutton
-                        dropDownSelection(),
-                        //title field
-                        requiredField(
-                          "Title of Event here",
-                          2,
-                          Icon(Icons.title),
-                          titleController,
-                        ),
-                        //tags input field
-                        TagField(),
-                      ],
-                    ),
-                  ),
-                  //image picker widget
-                  imagePicker(),
-                ],
+              //*titles, visbility toggle, tags, organization and banner
+              Padding(
+                padding: EdgeInsets.only(bottom: 40),
+                child: upperField(titleController),
               ),
-
+              //**Additional detail sections...
               Text(
                 "Input the Details of the Event:",
                 textAlign: TextAlign.left,
               ),
               //location and type field
-              Row(
-                children: [
-                  Flexible(
-                    flex: 3,
-                    child: requiredField(
-                      "Location",
-                      1,
-                      Icon(Icons.pin_drop),
-                      locationController,
+              Padding(
+                padding: EdgeInsets.only(bottom: 20),
+                child: Row(
+                  children: [
+                    Flexible(
+                      flex: 3,
+                      child: requiredField(
+                        "Location",
+                        1,
+                        Icon(Icons.pin_drop),
+                        locationController,
+                      ),
                     ),
-                  ),
-                  SizedBox(width: 30),
-                  Flexible(
-                    flex: 1,
-                    child: requiredField(
-                      "Type",
-                      1,
-                      Icon(Icons.book),
-                      typeController,
+                    SizedBox(width: 30),
+                    Flexible(
+                      flex: 1,
+                      child: requiredField(
+                        "Type",
+                        1,
+                        Icon(Icons.book),
+                        typeController,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               //date start and date end picker
-              dateTimePicker(context),
+              Padding(
+                padding: EdgeInsets.only(bottom: 40),
+                child: dateTimePicker(),
+              ),
 
               //description field
               SizedBox(
@@ -122,6 +118,7 @@ class EventForms extends StatelessWidget {
                   descContoller,
                 ),
               ),
+
               //submit and cancel buttons
               Row(
                 children: [
@@ -153,46 +150,99 @@ class EventForms extends StatelessWidget {
     );
   }
 
-  EventDateRangePicker dateTimePicker(BuildContext context) {
-    return EventDateRangePicker(
-      startDateController: TextEditingController(),
-      endDateController: TextEditingController(),
-      onStartChanged:
-          (date) => context.read<DateTimeRangeCubit>().updateStart(date),
-      onEndChanged:
-          (date) => context.read<DateTimeRangeCubit>().updateEnd(date),
+  Row upperField(TextEditingController titleController) {
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              //toggle button
+              Padding(
+                padding: EdgeInsets.only(bottom: 20),
+                child: toggleVisibilityButton(),
+              ),
+              //organization dropdownbutton
+              Padding(
+                padding: EdgeInsets.only(bottom: 30),
+                child: organizationSelection(),
+              ),
+
+              //title field
+              Padding(
+                padding: EdgeInsets.only(bottom: 20),
+                child: requiredField(
+                  "Title of Event here",
+                  3,
+                  Icon(Icons.title),
+                  titleController,
+                ),
+              ),
+              //tags input field
+              Padding(padding: EdgeInsets.only(bottom: 20), child: TagField()),
+            ],
+          ),
+        ),
+        //banner image picker
+        Padding(padding: EdgeInsets.only(left: 30), child: bannerPicker()),
+      ],
     );
   }
 
-  BlocBuilder<ImagePickerCubit, PlatformFile?> imagePicker() {
+  BlocBuilder<DateTimeRangeCubit, EventDateTimeRange?> dateTimePicker() {
+    return BlocBuilder<DateTimeRangeCubit, EventDateTimeRange?>(
+      bloc: dateTimeRangeCubit,
+      builder: (context, dateTimeRange) {
+        return EventDateRangePicker(
+          startDateController: TextEditingController(
+            text:
+                isUpdateData
+                    ? DateFormat.yMMMd().add_jm().format(dateTimeRange!.end!)
+                    : null,
+          ),
+          endDateController: TextEditingController(
+            text:
+                isUpdateData
+                    ? DateFormat.yMMMd().add_jm().format(dateTimeRange!.start!)
+                    : null,
+          ),
+          onStartChanged: (date) => dateTimeRangeCubit?.updateStart(date),
+          onEndChanged: (date) => dateTimeRangeCubit?.updateEnd(date),
+        );
+      },
+    );
+  }
+
+  BlocBuilder<ImagePickerCubit, PlatformFile?> bannerPicker() {
     return BlocBuilder<ImagePickerCubit, PlatformFile?>(
+      bloc: bannerCubit,
       builder: (context, file) {
-        return Container(
-          width: 500,
-          height: 550,
-          padding: EdgeInsets.only(left: 40),
-          child: Stack(
-            children: [
-              SizedBox.expand(child: Card(color: Colors.white)),
-              Align(
-                alignment: Alignment.center,
-                child: GestureDetector(
-                  onTap: () => context.read<ImagePickerCubit>().pickImage(),
-                  child:
-                      file != null
-                          ? Image.memory(file.bytes!, fit: BoxFit.cover)
-                          : Icon(Icons.add_a_photo, size: 40),
-                ),
-              ),
-            ],
+        return GestureDetector(
+          onTap: () => bannerCubit?.pickImage(),
+          child: Container(
+            width: 300,
+            height: 350,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              color: Colors.white,
+            ),
+            padding: EdgeInsets.only(left: 20),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child:
+                  file != null
+                      ? Image.memory(file.bytes!, fit: BoxFit.cover)
+                      : Icon(Icons.add_a_photo, size: 50),
+            ),
           ),
         );
       },
     );
   }
 
-  BlocBuilder<DropDownCubit, dynamic> dropDownSelection() {
+  BlocBuilder<DropDownCubit, dynamic> organizationSelection() {
     return BlocBuilder<DropDownCubit, dynamic>(
+      bloc: dropDownCubit,
       builder: (context, selectedItem) {
         return DropdownButtonFormField<dynamic>(
           decoration: InputDecoration(
@@ -203,10 +253,7 @@ class EventForms extends StatelessWidget {
               borderRadius: BorderRadius.circular(20),
             ),
           ),
-          value:
-              (selectedItem != null && orgList.contains(selectedItem))
-                  ? selectedItem
-                  : null,
+          value: selectedItem,
           iconSize: 40,
           items:
               orgList.map((item) {
@@ -217,7 +264,7 @@ class EventForms extends StatelessWidget {
               }).toList(),
           onChanged: (item) {
             if (item != null) {
-              context.read<DropDownCubit>().selectItem(item);
+              dropDownCubit?.selectItem(item);
             }
           },
           isExpanded: true,
@@ -226,21 +273,15 @@ class EventForms extends StatelessWidget {
     );
   }
 
-  BlocBuilder<ToggleVisibilityCubit, bool> toggleVisibilityButton() {
-    return BlocBuilder<ToggleVisibilityCubit, bool>(
+  BlocBuilder<ToggleButtonCubit, bool> toggleVisibilityButton() {
+    return BlocBuilder<ToggleButtonCubit, bool>(
       builder: (context, isVisible) {
         return Row(
           children: [
-            Text("Toggle Visibility of the Event: "),
-            IconButton(
-              onPressed: context.read<ToggleVisibilityCubit>().toggle,
-              icon: Row(
-                children: [
-                  Icon(isVisible ? Icons.visibility : Icons.visibility_off),
-                  SizedBox(width: 10),
-                  Text(isVisible ? "Visible" : "Hidden"),
-                ],
-              ),
+            Text("Set This Event as Visible: "),
+            Switch(
+              value: isVisible,
+              onChanged: (_) => context.read<ToggleButtonCubit>().toggle(),
             ),
           ],
         );
@@ -299,14 +340,11 @@ class EventForms extends StatelessWidget {
   ) {
     return ElevatedButton(
       onPressed: () async {
-        final selectedOrganization = context.read<DropDownCubit>().state;
+        final selectedOrganization = dropDownCubit?.state;
         final dateTimeRange = context.read<DateTimeRangeCubit>().state;
-        final imageFile = context.read<ImagePickerCubit>().state;
+        final imageFile = bannerCubit?.state;
         final tags = context.read<TagInputCubit>().state;
-        final toggledVisibility = context.read<ToggleVisibilityCubit>().state;
-        final updateToggle =
-            isUpdateData ??
-            false; //check toggle if the user is either isnerting or updating data
+        final toggledVisibility = toggleButton.state;
 
         //initial checking
         if (formKey.currentState!.validate() &&
@@ -319,7 +357,7 @@ class EventForms extends StatelessWidget {
             (locationController.text.isNotEmpty ||
                 locationController.text.trim().isNotEmpty)) {
           //check if it is about updating the data or not
-          if (updateToggle) {
+          if (isUpdateData) {
             //supabase.storage.from('images').remove([]);
             supabase.storage
                 .from('images')
@@ -374,17 +412,18 @@ class EventForms extends StatelessWidget {
               ),
             );
           }
-          //specific for the banner selection
+          //specific handling for the banner selection
         } else if (imageFile == null) {
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(SnackBar(content: Text("Please select the Banner")));
 
-          //specific for the organization selection
+          //specific handling for the organization selection
         } else if (selectedOrganization == null) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text("Please select the organization")),
           );
+          //general handling for all required fields
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text("Complete all required fields")),

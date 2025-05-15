@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:intl/intl.dart';
 
+//constructors
 class EventDateRangePicker extends StatelessWidget {
   final DateTime? startDate;
   final DateTime? endDate;
@@ -20,20 +21,21 @@ class EventDateRangePicker extends StatelessWidget {
     required this.endDateController,
   });
 
+  //selecting date and time
   Future<void> _selectDateTime(
     BuildContext context,
     DateTime? initDate,
     void Function(DateTime) onPicked,
     TextEditingController controller,
   ) async {
-    final picked = await showDatePicker(
+    final pickedDate = await showDatePicker(
       context: context,
       initialDate: initDate ?? DateTime.now(),
       firstDate: DateTime(2000),
       lastDate: DateTime(2100),
     );
 
-    if (picked == null) return;
+    if (pickedDate == null) return;
 
     SchedulerBinding.instance.addPostFrameCallback((_) async {
       final pickedTime = await showTimePicker(
@@ -44,9 +46,9 @@ class EventDateRangePicker extends StatelessWidget {
       if (pickedTime == null) return;
 
       final combined = DateTime(
-        picked.year,
-        picked.month,
-        picked.day,
+        pickedDate.year,
+        pickedDate.month,
+        pickedDate.day,
         pickedTime.hour,
         pickedTime.minute,
       );

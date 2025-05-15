@@ -27,8 +27,7 @@ class NavigationState {
 
 //for custom dropdown button----------------------------------------
 class DropDownCubit extends Cubit<dynamic> {
-  DropDownCubit(dynamic initValue)
-    : super(initValue ?? "Please select the organization here");
+  DropDownCubit(super.initValue);
   void selectItem(dynamic value) => emit(value);
 }
 //-----------------------------------------------------------------
@@ -50,42 +49,9 @@ class TagInputCubit extends Cubit<List<dynamic>> {
 }
 //-----------------------------------------------------------------
 
-//for datetime inputs----------------------------------------------
-class EventDateTimeRange {
-  final DateTime? start;
-  final DateTime? end;
-  EventDateTimeRange({this.start, this.end});
-}
-
-class DateTimeRangeCubit extends Cubit<EventDateTimeRange?> {
-  DateTimeRangeCubit({EventDateTimeRange? initDateTime}) : super(initDateTime);
-
-  void setDate(EventDateTimeRange date) {
-    if (date.start!.isAfter(date.end!)) {
-      clear();
-      return;
-    }
-    emit(date);
-  }
-
-  void clear() => emit(null);
-  void updateStart(DateTime newStart) {
-    final current = state;
-    if (current != null && newStart.isAfter(current.end!)) return;
-    emit(EventDateTimeRange(start: newStart, end: current?.end));
-  }
-
-  void updateEnd(DateTime newEnd) {
-    final current = state;
-    if (current != null && newEnd.isBefore(current.start!)) return;
-    emit(EventDateTimeRange(start: current?.start, end: newEnd));
-  }
-}
-//-----------------------------------------------------------------
-
 //hiding the state of visibility-----------------------------------
-class ToggleVisibilityCubit extends Cubit<bool> {
-  ToggleVisibilityCubit(super.currentToggle);
+class ToggleButtonCubit extends Cubit<bool> {
+  ToggleButtonCubit(bool? currentToggle) : super(currentToggle ?? true);
   void toggle() => emit(!state);
 }
 //-----------------------------------------------------------------

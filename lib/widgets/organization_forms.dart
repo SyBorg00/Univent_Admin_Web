@@ -1,5 +1,5 @@
 import 'package:agawin_unievent_app/bloc/main_bloc/crud_bloc.dart';
-import 'package:agawin_unievent_app/cubit/image_picker.dart';
+import 'package:agawin_unievent_app/cubit/image_picker_cubit.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

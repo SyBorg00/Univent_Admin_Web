@@ -29,7 +29,9 @@ class TagField extends StatelessWidget {
               onSubmitted: (val) => _onSubmitted(context, val),
               decoration: InputDecoration(
                 hintText: hintText,
-                border: OutlineInputBorder(),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
               ),
             ),
           ],
